@@ -157,6 +157,9 @@ function calculateFluency(fillerCount: number, wpm: number): number {
 export const analyzePresentation = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }): Promise<Analysis> => {
+    // Per-IP rate limit to mitigate abuse on this unauthenticated endpoint.
+    checkRateLimit(getClientIp());
+
     // ---- 1. Transcribe audio with Gemini ----
     const transcribeBody = {
       model: "google/gemini-2.5-flash",
