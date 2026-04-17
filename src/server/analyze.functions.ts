@@ -78,7 +78,11 @@ async function callGateway(body: unknown): Promise<any> {
     );
   if (!res.ok) {
     const t = await res.text();
-    throw new Error(`AI gateway error ${res.status}: ${t.slice(0, 300)}`);
+    // Log full details server-side only; return a generic message to the client.
+    console.error("AI gateway error", res.status, t);
+    throw new Error(
+      `AI_ERROR: The analysis service is temporarily unavailable (${res.status}). Please try again shortly.`,
+    );
   }
   return res.json();
 }
