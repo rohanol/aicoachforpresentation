@@ -1,10 +1,53 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
+// Simple in-memory per-IP rate limiter for this open endpoint.
+// Limits a single IP to N analyses per rolling window to prevent credit abuse.
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const rateLimitBuckets = new Map<string, number[]>();
+
+function checkRateLimit(ip: string): void {
+  const now = Date.now();
+  const cutoff = now - RATE_LIMIT_WINDOW_MS;
+  const arr = (rateLimitBuckets.get(ip) ?? []).filter((t) => t > cutoff);
+  if (arr.length >= RATE_LIMIT_MAX) {
+    throw new Error(
+      "RATE_LIMIT: You've reached the hourly analysis limit. Please try again later.",
+    );
+  }
+  arr.push(now);
+  rateLimitBuckets.set(ip, arr);
+  if (rateLimitBuckets.size > 5000) {
+    for (const [k, v] of rateLimitBuckets) {
+      const filtered = v.filter((t) => t > cutoff);
+      if (filtered.length === 0) rateLimitBuckets.delete(k);
+      else rateLimitBuckets.set(k, filtered);
+    }
+  }
+}
+
+function getClientIp(): string {
+  try {
+    const req = getRequest();
+    const h = req?.headers;
+    if (!h) return "unknown";
+    const fwd =
+      h.get("cf-connecting-ip") || h.get("x-forwarded-for") || h.get("x-real-ip");
+    if (fwd) return fwd.split(",")[0].trim();
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
 const InputSchema = z.object({
-  audioBase64: z.string().min(10),
+  // ~20 MB cap on base64 audio (≈15 MB raw, ~5 min of 16kHz mono WAV)
+  audioBase64: z.string().min(10).max(20_000_000),
   audioMimeType: z.string().min(3).max(64),
-  frames: z.array(z.string().min(10)).min(0).max(8), // base64 jpeg, no data: prefix
+  // Each frame capped at ~500 KB base64 (~375 KB JPEG)
+  frames: z.array(z.string().min(10).max(500_000)).min(0).max(8),
   durationSeconds: z.number().min(0.1).max(60 * 30),
   tone: z.enum(["male", "female", "neutral"]),
 });
@@ -76,7 +119,11 @@ async function callGateway(body: unknown): Promise<any> {
     );
   if (!res.ok) {
     const t = await res.text();
-    throw new Error(`AI gateway error ${res.status}: ${t.slice(0, 300)}`);
+    // Log full details server-side only; return a generic message to the client.
+    console.error("AI gateway error", res.status, t);
+    throw new Error(
+      `AI_ERROR: The analysis service is temporarily unavailable (${res.status}). Please try again shortly.`,
+    );
   }
   return res.json();
 }
@@ -110,6 +157,9 @@ function calculateFluency(fillerCount: number, wpm: number): number {
 export const analyzePresentation = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }): Promise<Analysis> => {
+    // Per-IP rate limit to mitigate abuse on this unauthenticated endpoint.
+    checkRateLimit(getClientIp());
+
     // ---- 1. Transcribe audio with Gemini ----
     const transcribeBody = {
       model: "google/gemini-2.5-flash",
