@@ -33,10 +33,14 @@ export const Route = createRootRoute({
       { name: "description", content: "Upload a presentation video and get AI-powered scoring on speech, body language, and confidence with personalized mentor feedback." },
       { name: "author", content: "Lovable" },
       { property: "og:title", content: "AI Presentation Analyzer" },
-      { property: "og:description", content: "Upload a presentation video and get AI-powered coaching on speech, body language, and confidence." },
+      { property: "og:description", content: "Upload a presentation video and get AI-powered scoring on speech, body language, and confidence with personalized mentor feedback." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "AI Presentation Analyzer" },
+      { name: "twitter:description", content: "Upload a presentation video and get AI-powered scoring on speech, body language, and confidence with personalized mentor feedback." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f9f9bc10-29f2-4461-be73-308ebdd8781e" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f9f9bc10-29f2-4461-be73-308ebdd8781e" },
     ],
     links: [
       {
