@@ -1,5 +1,46 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
+
+// Simple in-memory per-IP rate limiter for this open endpoint.
+// Limits a single IP to N analyses per rolling window to prevent credit abuse.
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const rateLimitBuckets = new Map<string, number[]>();
+
+function checkRateLimit(ip: string): void {
+  const now = Date.now();
+  const cutoff = now - RATE_LIMIT_WINDOW_MS;
+  const arr = (rateLimitBuckets.get(ip) ?? []).filter((t) => t > cutoff);
+  if (arr.length >= RATE_LIMIT_MAX) {
+    throw new Error(
+      "RATE_LIMIT: You've reached the hourly analysis limit. Please try again later.",
+    );
+  }
+  arr.push(now);
+  rateLimitBuckets.set(ip, arr);
+  if (rateLimitBuckets.size > 5000) {
+    for (const [k, v] of rateLimitBuckets) {
+      const filtered = v.filter((t) => t > cutoff);
+      if (filtered.length === 0) rateLimitBuckets.delete(k);
+      else rateLimitBuckets.set(k, filtered);
+    }
+  }
+}
+
+function getClientIp(): string {
+  try {
+    const req = getRequest();
+    const h = req?.headers;
+    if (!h) return "unknown";
+    const fwd =
+      h.get("cf-connecting-ip") || h.get("x-forwarded-for") || h.get("x-real-ip");
+    if (fwd) return fwd.split(",")[0].trim();
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
+}
 
 const InputSchema = z.object({
   // ~20 MB cap on base64 audio (≈15 MB raw, ~5 min of 16kHz mono WAV)
