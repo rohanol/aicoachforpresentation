@@ -99,12 +99,16 @@ function HomePage() {
     } catch (e: any) {
       console.error(e);
       const msg: string = e?.message ?? "Something went wrong.";
-      let friendly = msg;
+      let friendly: string;
       if (msg.includes("RATE_LIMIT"))
         friendly = "Too many requests right now. Please wait a moment and try again.";
       else if (msg.includes("PAYMENT_REQUIRED"))
         friendly =
           "Your Lovable AI workspace is out of credits. Add funds in Settings → Workspace → Usage and retry.";
+      else if (msg.includes("AI_ERROR"))
+        friendly = "The analysis service is temporarily unavailable. Please try again shortly.";
+      else
+        friendly = "Something went wrong while analyzing your video. Please try again.";
       setError(friendly);
       setStage("error");
     }
