@@ -2,9 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const InputSchema = z.object({
-  audioBase64: z.string().min(10),
+  // ~20 MB cap on base64 audio (≈15 MB raw, ~5 min of 16kHz mono WAV)
+  audioBase64: z.string().min(10).max(20_000_000),
   audioMimeType: z.string().min(3).max(64),
-  frames: z.array(z.string().min(10)).min(0).max(8), // base64 jpeg, no data: prefix
+  // Each frame capped at ~500 KB base64 (~375 KB JPEG)
+  frames: z.array(z.string().min(10).max(500_000)).min(0).max(8),
   durationSeconds: z.number().min(0.1).max(60 * 30),
   tone: z.enum(["male", "female", "neutral"]),
 });
