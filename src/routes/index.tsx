@@ -1,10 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Mic, Sparkles, Loader2 } from "lucide-react";
+import { Mic, Sparkles, Loader2, LogIn } from "lucide-react";
 
 import { VideoUploader } from "@/components/VideoUploader";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -15,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { extractFromVideo } from "@/lib/video-extract";
+import { supabase } from "@/integrations/supabase/client";
 import {
   analyzePresentation,
   type Analysis,
