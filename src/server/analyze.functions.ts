@@ -194,8 +194,39 @@ function calculateFluency(fillerCount: number, wpm: number): number {
 export const analyzePresentation = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }): Promise<Analysis> => {
-    // Per-IP rate limit to mitigate abuse on this unauthenticated endpoint.
-    checkRateLimit(getClientIp());
+    const ip = getClientIp();
+    checkRateLimit(ip);
+
+    // Identify the caller (optional auth).
+    const userId = await getUserFromToken(data.accessToken);
+
+    let plan: "free" | "pro" | "business" = "free";
+    let analysesUsed = 0;
+
+    if (userId) {
+      const { data: profile, error } = await supabaseAdmin
+        .from("profiles")
+        .select("plan, analyses_used")
+        .eq("id", userId)
+        .maybeSingle();
+      if (error) {
+        console.error("Profile fetch failed", error);
+        throw new Error("AI_ERROR: Could not load your account. Please try again.");
+      }
+      if (profile) {
+        plan = (profile.plan as typeof plan) ?? "free";
+        analysesUsed = profile.analyses_used ?? 0;
+      }
+      if (plan === "free" && analysesUsed >= FREE_PLAN_LIMIT) {
+        throw new Error(
+          "LIMIT_REACHED: You've used all 3 free analyses. Upgrade to Pro for unlimited access.",
+        );
+      }
+    } else {
+      // Anonymous: 1 free analysis per IP per 30 days.
+      checkAnonQuota(ip);
+    }
+
 
     // ---- 1. Transcribe audio with Gemini ----
     const transcribeBody = {
