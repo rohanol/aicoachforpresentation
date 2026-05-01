@@ -90,6 +90,9 @@ function AuthHeader() {
     <div className="fixed right-4 top-4 z-50 flex items-center gap-2">
       {user ? (
         <>
+          <Button asChild size="sm" variant="ghost" className="backdrop-blur">
+            <Link to="/history">History</Link>
+          </Button>
           <span className="hidden rounded-full border border-border bg-card/80 px-3 py-1.5 text-xs text-foreground/90 backdrop-blur sm:inline">
             {user.email}
           </span>
