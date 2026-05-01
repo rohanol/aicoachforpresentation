@@ -1,10 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Mic, Sparkles, Loader2 } from "lucide-react";
+import { Mic, Sparkles, Loader2, LogIn } from "lucide-react";
 
 import { VideoUploader } from "@/components/VideoUploader";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -15,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { extractFromVideo } from "@/lib/video-extract";
+import { supabase } from "@/integrations/supabase/client";
 import {
   analyzePresentation,
   type Analysis,
@@ -54,6 +56,8 @@ function HomePage() {
   const [statusText, setStatusText] = useState("");
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [needsAuth, setNeedsAuth] = useState(false);
 
   const reset = () => {
     setFile(null);
@@ -62,12 +66,14 @@ function HomePage() {
     setStatusText("");
     setAnalysis(null);
     setError(null);
+    setNeedsAuth(false);
   };
 
   const run = async () => {
     if (!file) return;
     setError(null);
     setAnalysis(null);
+    setNeedsAuth(false);
     setStage("extracting");
     setProgress(2);
     setStatusText("Preparing your video…");
@@ -82,6 +88,11 @@ function HomePage() {
       setStatusText("Sending to AI coach…");
       setProgress(92);
 
+      // Forward the user's access token (if signed in) so the server can
+      // identify them and apply the per-user quota.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
       const result = await analyze({
         data: {
           audioBase64: extracted.audioBase64,
@@ -89,6 +100,7 @@ function HomePage() {
           frames: extracted.frames,
           durationSeconds: extracted.durationSeconds,
           tone,
+          ...(accessToken ? { accessToken } : {}),
         },
       });
 
@@ -99,6 +111,20 @@ function HomePage() {
     } catch (e: any) {
       console.error(e);
       const msg: string = e?.message ?? "Something went wrong.";
+      if (msg.includes("LIMIT_REACHED")) {
+        setShowUpgrade(true);
+        setStage("idle");
+        setProgress(0);
+        setStatusText("");
+        return;
+      }
+      if (msg.includes("AUTH_REQUIRED")) {
+        setNeedsAuth(true);
+        setStage("error");
+        setProgress(0);
+        setStatusText("");
+        return;
+      }
       let friendly: string;
       if (msg.includes("RATE_LIMIT"))
         friendly = "Too many requests right now. Please wait a moment and try again.";
@@ -229,7 +255,35 @@ function HomePage() {
               </div>
             )}
 
-            {error && (
+            {needsAuth && (
+              <div className="rounded-2xl border border-primary/40 bg-primary/10 p-5 text-sm shadow-glow">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground">
+                    <LogIn className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground">
+                      Sign in for free to keep going
+                    </p>
+                    <p className="mt-1 text-foreground/80">
+                      You've used your free anonymous analysis. Create a free
+                      account to get 3 analyses every month.
+                    </p>
+                    <div className="mt-3">
+                      <Button
+                        asChild
+                        size="sm"
+                        className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+                      >
+                        <Link to="/auth">Sign in free</Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {error && !needsAuth && (
               <div
                 role="alert"
                 className="rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive-foreground"
@@ -239,7 +293,7 @@ function HomePage() {
               </div>
             )}
 
-            {!busy && !error && (
+            {!busy && !error && !needsAuth && (
               <div className="grid grid-cols-3 gap-3 pt-4">
                 <Stat label="Dimensions" value="6" />
                 <Stat label="AI passes" value="4" />
@@ -255,6 +309,8 @@ function HomePage() {
       <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
         Built on Lovable Cloud · AI by Lovable AI Gateway
       </footer>
+
+      <UpgradeModal open={showUpgrade} onOpenChange={setShowUpgrade} />
     </div>
   );
 }

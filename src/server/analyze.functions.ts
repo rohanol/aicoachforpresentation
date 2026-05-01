@@ -1,12 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 // Simple in-memory per-IP rate limiter for this open endpoint.
-// Limits a single IP to N analyses per rolling window to prevent credit abuse.
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const rateLimitBuckets = new Map<string, number[]>();
+
+// Anonymous users get 1 free analysis (rolling 30 days per IP).
+const ANON_FREE_LIMIT = 1;
+const ANON_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const anonUsageBuckets = new Map<string, number[]>();
+
+const FREE_PLAN_LIMIT = 3;
 
 function checkRateLimit(ip: string): void {
   const now = Date.now();
@@ -28,6 +35,25 @@ function checkRateLimit(ip: string): void {
   }
 }
 
+function checkAnonQuota(ip: string): void {
+  const now = Date.now();
+  const cutoff = now - ANON_WINDOW_MS;
+  const arr = (anonUsageBuckets.get(ip) ?? []).filter((t) => t > cutoff);
+  if (arr.length >= ANON_FREE_LIMIT) {
+    throw new Error(
+      "AUTH_REQUIRED: Sign in for free to get 3 analyses per month.",
+    );
+  }
+}
+
+function recordAnonUsage(ip: string): void {
+  const now = Date.now();
+  const cutoff = now - ANON_WINDOW_MS;
+  const arr = (anonUsageBuckets.get(ip) ?? []).filter((t) => t > cutoff);
+  arr.push(now);
+  anonUsageBuckets.set(ip, arr);
+}
+
 function getClientIp(): string {
   try {
     const req = getRequest();
@@ -42,14 +68,25 @@ function getClientIp(): string {
   }
 }
 
+async function getUserFromToken(token: string | undefined): Promise<string | null> {
+  if (!token) return null;
+  try {
+    const { data, error } = await supabaseAdmin.auth.getUser(token);
+    if (error || !data?.user) return null;
+    return data.user.id;
+  } catch {
+    return null;
+  }
+}
+
 const InputSchema = z.object({
-  // ~20 MB cap on base64 audio (≈15 MB raw, ~5 min of 16kHz mono WAV)
   audioBase64: z.string().min(10).max(20_000_000),
   audioMimeType: z.string().min(3).max(64),
-  // Each frame capped at ~500 KB base64 (~375 KB JPEG)
   frames: z.array(z.string().min(10).max(500_000)).min(0).max(8),
   durationSeconds: z.number().min(0.1).max(60 * 30),
   tone: z.enum(["male", "female", "neutral"]),
+  // Optional: Supabase access token for signed-in users (used to identify the caller).
+  accessToken: z.string().min(10).max(4000).optional(),
 });
 
 type Analysis = {
@@ -157,8 +194,39 @@ function calculateFluency(fillerCount: number, wpm: number): number {
 export const analyzePresentation = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }): Promise<Analysis> => {
-    // Per-IP rate limit to mitigate abuse on this unauthenticated endpoint.
-    checkRateLimit(getClientIp());
+    const ip = getClientIp();
+    checkRateLimit(ip);
+
+    // Identify the caller (optional auth).
+    const userId = await getUserFromToken(data.accessToken);
+
+    let plan: "free" | "pro" | "business" = "free";
+    let analysesUsed = 0;
+
+    if (userId) {
+      const { data: profile, error } = await supabaseAdmin
+        .from("profiles")
+        .select("plan, analyses_used")
+        .eq("id", userId)
+        .maybeSingle();
+      if (error) {
+        console.error("Profile fetch failed", error);
+        throw new Error("AI_ERROR: Could not load your account. Please try again.");
+      }
+      if (profile) {
+        plan = (profile.plan as typeof plan) ?? "free";
+        analysesUsed = profile.analyses_used ?? 0;
+      }
+      if (plan === "free" && analysesUsed >= FREE_PLAN_LIMIT) {
+        throw new Error(
+          "LIMIT_REACHED: You've used all 3 free analyses. Upgrade to Pro for unlimited access.",
+        );
+      }
+    } else {
+      // Anonymous: 1 free analysis per IP per 30 days.
+      checkAnonQuota(ip);
+    }
+
 
     // ---- 1. Transcribe audio with Gemini ----
     const transcribeBody = {
@@ -418,6 +486,28 @@ Be personal, specific, motivating. Plain text, no markdown headers.`,
     )
       .toString()
       .trim();
+
+    // ---- 6. Persist usage ----
+    if (userId) {
+      // Increment analyses_used and save the analysis row (best-effort).
+      const { error: incErr } = await supabaseAdmin
+        .from("profiles")
+        .update({ analyses_used: analysesUsed + 1 })
+        .eq("id", userId);
+      if (incErr) console.error("Failed to increment analyses_used", incErr);
+
+      const { error: insErr } = await supabaseAdmin.from("analyses").insert({
+        user_id: userId,
+        final_score: finalScore,
+        fluency_score: fluencyScore,
+        grammar_score: grammarScore,
+        confidence_score: confidenceScore,
+        posture_score: postureScore,
+      });
+      if (insErr) console.error("Failed to save analysis row", insErr);
+    } else {
+      recordAnonUsage(ip);
+    }
 
     return {
       transcript,
