@@ -487,6 +487,28 @@ Be personal, specific, motivating. Plain text, no markdown headers.`,
       .toString()
       .trim();
 
+    // ---- 6. Persist usage ----
+    if (userId) {
+      // Increment analyses_used and save the analysis row (best-effort).
+      const { error: incErr } = await supabaseAdmin
+        .from("profiles")
+        .update({ analyses_used: analysesUsed + 1 })
+        .eq("id", userId);
+      if (incErr) console.error("Failed to increment analyses_used", incErr);
+
+      const { error: insErr } = await supabaseAdmin.from("analyses").insert({
+        user_id: userId,
+        final_score: finalScore,
+        fluency_score: fluencyScore,
+        grammar_score: grammarScore,
+        confidence_score: confidenceScore,
+        posture_score: postureScore,
+      });
+      if (insErr) console.error("Failed to save analysis row", insErr);
+    } else {
+      recordAnonUsage(ip);
+    }
+
     return {
       transcript,
       wpm,
