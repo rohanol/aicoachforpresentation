@@ -1,6 +1,10 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { useUser } from "@/hooks/use-user";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 function NotFoundComponent() {
   return (
@@ -69,5 +73,45 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  return <Outlet />;
+  return (
+    <>
+      <AuthHeader />
+      <Outlet />
+    </>
+  );
+}
+
+function AuthHeader() {
+  const { user, loading } = useUser();
+
+  if (loading) return null;
+
+  return (
+    <div className="fixed right-4 top-4 z-50 flex items-center gap-2">
+      {user ? (
+        <>
+          <span className="hidden rounded-full border border-border bg-card/80 px-3 py-1.5 text-xs text-foreground/90 backdrop-blur sm:inline">
+            {user.email}
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => supabase.auth.signOut()}
+            className="backdrop-blur"
+          >
+            <LogOut className="mr-1.5 h-3.5 w-3.5" />
+            Sign out
+          </Button>
+        </>
+      ) : (
+        <Button
+          asChild
+          size="sm"
+          className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+        >
+          <Link to="/auth">Sign in</Link>
+        </Button>
+      )}
+    </div>
+  );
 }
