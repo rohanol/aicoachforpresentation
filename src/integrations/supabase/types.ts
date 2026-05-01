@@ -14,7 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      analyses: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          final_score: number | null
+          fluency_score: number | null
+          grammar_score: number | null
+          id: string
+          posture_score: number | null
+          user_id: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          final_score?: number | null
+          fluency_score?: number | null
+          grammar_score?: number | null
+          id?: string
+          posture_score?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          final_score?: number | null
+          fluency_score?: number | null
+          grammar_score?: number | null
+          id?: string
+          posture_score?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analyses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          analyses_used: number
+          created_at: string
+          id: string
+          plan: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+        }
+        Insert: {
+          analyses_used?: number
+          created_at?: string
+          id: string
+          plan?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+        }
+        Update: {
+          analyses_used?: number
+          created_at?: string
+          id?: string
+          plan?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
