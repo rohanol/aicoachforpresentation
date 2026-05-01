@@ -56,6 +56,8 @@ function HomePage() {
   const [statusText, setStatusText] = useState("");
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [needsAuth, setNeedsAuth] = useState(false);
 
   const reset = () => {
     setFile(null);
@@ -64,12 +66,14 @@ function HomePage() {
     setStatusText("");
     setAnalysis(null);
     setError(null);
+    setNeedsAuth(false);
   };
 
   const run = async () => {
     if (!file) return;
     setError(null);
     setAnalysis(null);
+    setNeedsAuth(false);
     setStage("extracting");
     setProgress(2);
     setStatusText("Preparing your video…");
@@ -84,6 +88,11 @@ function HomePage() {
       setStatusText("Sending to AI coach…");
       setProgress(92);
 
+      // Forward the user's access token (if signed in) so the server can
+      // identify them and apply the per-user quota.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
       const result = await analyze({
         data: {
           audioBase64: extracted.audioBase64,
@@ -91,6 +100,7 @@ function HomePage() {
           frames: extracted.frames,
           durationSeconds: extracted.durationSeconds,
           tone,
+          ...(accessToken ? { accessToken } : {}),
         },
       });
 
@@ -101,6 +111,20 @@ function HomePage() {
     } catch (e: any) {
       console.error(e);
       const msg: string = e?.message ?? "Something went wrong.";
+      if (msg.includes("LIMIT_REACHED")) {
+        setShowUpgrade(true);
+        setStage("idle");
+        setProgress(0);
+        setStatusText("");
+        return;
+      }
+      if (msg.includes("AUTH_REQUIRED")) {
+        setNeedsAuth(true);
+        setStage("error");
+        setProgress(0);
+        setStatusText("");
+        return;
+      }
       let friendly: string;
       if (msg.includes("RATE_LIMIT"))
         friendly = "Too many requests right now. Please wait a moment and try again.";
