@@ -86,6 +86,7 @@ function HomePage() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [needsAuth, setNeedsAuth] = useState(false);
   const [showSample, setShowSample] = useState(false);
 
   const scrollToUpload = () => {
