@@ -12,16 +12,21 @@ export type AnalysisScores = {
   posture_score?: number | null;
 };
 
-/** Fetch the current user's profile row. */
+/** Fetch the current user's profile row, creating a free one if missing. */
 export async function getUserProfile(userId: string): Promise<Profile> {
+  // Upsert acts as a defensive fallback for users created before the
+  // on_auth_user_created trigger existed. ignoreDuplicates leaves existing
+  // rows untouched so we don't reset plan/usage on every read.
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .maybeSingle();
+    .upsert(
+      { id: userId, plan: "free", analyses_used: 0 },
+      { onConflict: "id", ignoreDuplicates: true },
+    )
+    .select()
+    .single();
 
   if (error) throw error;
-  if (!data) throw new Error("Profile not found");
   return data;
 }
 
