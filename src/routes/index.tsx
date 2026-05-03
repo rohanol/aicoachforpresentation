@@ -207,140 +207,335 @@ function HomePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:py-12">
+      <main className="scroll-smooth">
         {!analysis && (
-          <section className="mb-8 text-center">
-            <div className="mx-auto mb-4 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary-glow">
-              <Sparkles className="h-3.5 w-3.5" />
-              AI-powered presentation analysis
-            </div>
-            <h1 className="text-balance text-3xl font-bold tracking-tight sm:text-5xl">
-              Turn any recorded talk into{" "}
-              <span className="text-gradient-score">actionable coaching</span>
-            </h1>
-            <p className="mx-auto mt-3 max-w-2xl text-pretty text-sm text-muted-foreground sm:text-base">
-              Upload a presentation video. We transcribe your speech, analyze your
-              body language, score fluency and confidence, and write you a personal
-              mentor report.
-            </p>
-          </section>
-        )}
+          <>
+            {/* SECTION 1 — Hero */}
+            <section className="mx-auto max-w-5xl px-4 pb-16 pt-12 text-center sm:pt-20">
+              <div className="mx-auto mb-5 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary-glow">
+                <Sparkles className="h-3.5 w-3.5" />
+                AI-powered presentation analysis
+              </div>
+              <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-6xl">
+                Turn any recorded talk into{" "}
+                <span className="text-gradient-score">actionable coaching</span>
+              </h1>
+              <p className="mx-auto mt-5 max-w-2xl text-pretty text-base text-muted-foreground sm:text-lg">
+                Upload a video. Get AI-powered scores on fluency, body language,
+                grammar and confidence — with a personal mentor report in under
+                60 seconds.
+              </p>
 
-        {!analysis && (
-          <div className="space-y-5">
-            <VideoUploader file={file} onFile={setFile} disabled={busy} />
-
-            <div className="grid gap-4 rounded-2xl border border-border bg-card/60 p-5 shadow-card backdrop-blur sm:grid-cols-[1fr_auto] sm:items-end">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Coaching tone
-                </label>
-                <Select
-                  value={tone}
-                  onValueChange={(v) => setTone(v as typeof tone)}
-                  disabled={busy}
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Button
+                  size="lg"
+                  onClick={scrollToUpload}
+                  className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="neutral">
-                      Neutral — balanced & professional
-                    </SelectItem>
-                    <SelectItem value="male">
-                      Direct — competitive, data-driven
-                    </SelectItem>
-                    <SelectItem value="female">
-                      Encouraging — warm & empowering
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Try it free — no signup needed
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setShowSample(true)}
+                >
+                  See a sample report
+                </Button>
               </div>
-              <Button
-                size="lg"
-                onClick={run}
-                disabled={!file || busy}
-                className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
-              >
-                {busy ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing…
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Analyze presentation
-                  </>
-                )}
-              </Button>
-            </div>
 
-            {busy && (
-              <div className="rounded-2xl border border-border bg-card/60 p-5 shadow-card backdrop-blur">
-                <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="text-foreground/90">{statusText}</span>
-                  <span className="text-muted-foreground">{progress}%</span>
-                </div>
-                <Progress value={progress} />
-                {stage === "analyzing" && (
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    Running transcription, speech analysis, vision analysis, and
-                    mentor feedback in parallel. This usually takes 20–60 seconds.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {needsAuth && (
-              <div className="rounded-2xl border border-primary/40 bg-primary/10 p-5 text-sm shadow-glow">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground">
-                    <LogIn className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-foreground">
-                      Sign in for free to keep going
-                    </p>
-                    <p className="mt-1 text-foreground/80">
-                      You've used your free anonymous analysis. Create a free
-                      account to get 3 analyses every month.
-                    </p>
-                    <div className="mt-3">
-                      <Button
-                        asChild
-                        size="sm"
-                        className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
-                      >
-                        <Link to="/auth">Sign in free</Link>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {error && !needsAuth && (
-              <div
-                role="alert"
-                className="rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive-foreground"
-              >
-                <p className="font-medium">Analysis failed</p>
-                <p className="mt-1 text-foreground/90">{error}</p>
-              </div>
-            )}
-
-            {!busy && !error && !needsAuth && (
-              <div className="grid grid-cols-3 gap-3 pt-4">
+              <div className="mx-auto mt-10 grid max-w-xl grid-cols-3 gap-3">
                 <Stat label="Dimensions" value="6" />
                 <Stat label="AI passes" value="4" />
                 <Stat label="Avg. time" value="~45s" />
               </div>
-            )}
-          </div>
+            </section>
+
+            {/* SECTION 2 — How it works */}
+            <section className="border-t border-border/60 bg-card/20 py-16">
+              <div className="mx-auto max-w-5xl px-4">
+                <h2 className="mb-10 text-center text-3xl font-bold tracking-tight sm:text-4xl">
+                  How it works
+                </h2>
+                <div className="grid gap-6 sm:grid-cols-3">
+                  <Step
+                    n={1}
+                    icon={<Upload className="h-5 w-5" />}
+                    title="Upload your video"
+                    text="MP4, MOV, AVI — up to 200MB."
+                  />
+                  <Step
+                    n={2}
+                    icon={<Cpu className="h-5 w-5" />}
+                    title="AI analyzes in parallel"
+                    text="Speech, body language, fluency and confidence — all at once."
+                  />
+                  <Step
+                    n={3}
+                    icon={<FileText className="h-5 w-5" />}
+                    title="Get your mentor report"
+                    text="Personal scores plus targeted improvement tips."
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 3 — What gets analyzed */}
+            <section className="py-16">
+              <div className="mx-auto max-w-5xl px-4">
+                <h2 className="mb-10 text-center text-3xl font-bold tracking-tight sm:text-4xl">
+                  What gets analyzed
+                </h2>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <Feature
+                    icon={<Mic2 className="h-5 w-5" />}
+                    title="Speech Fluency"
+                    text="Filler words, pace, rhythm scored 0–100."
+                  />
+                  <Feature
+                    icon={<PenLine className="h-5 w-5" />}
+                    title="Grammar"
+                    text="Sentence structure and language quality."
+                  />
+                  <Feature
+                    icon={<Eye className="h-5 w-5" />}
+                    title="Eye Contact"
+                    text="How often you face the camera."
+                  />
+                  <Feature
+                    icon={<PersonStanding className="h-5 w-5" />}
+                    title="Posture"
+                    text="Body positioning throughout your talk."
+                  />
+                  <Feature
+                    icon={<MessageSquare className="h-5 w-5" />}
+                    title="Confidence"
+                    text="Word choice, structure, hedging language."
+                  />
+                  <Feature
+                    icon={<Brain className="h-5 w-5" />}
+                    title="Mentor Report"
+                    text="3-paragraph personalized coaching feedback."
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 4 — Pricing */}
+            <section className="border-t border-border/60 bg-card/20 py-16">
+              <div className="mx-auto max-w-5xl px-4">
+                <h2 className="mb-3 text-center text-3xl font-bold tracking-tight sm:text-4xl">
+                  Simple, transparent pricing
+                </h2>
+                <p className="mb-10 text-center text-sm text-muted-foreground">
+                  Start free. Upgrade when you're ready.
+                </p>
+                <div className="grid gap-6 lg:grid-cols-3">
+                  <PriceCard
+                    name="Free"
+                    price="₹0"
+                    period="forever"
+                    features={[
+                      "3 analyses per month",
+                      "Basic scores only",
+                      "History dashboard",
+                    ]}
+                    cta="Start free"
+                    onCta={scrollToUpload}
+                  />
+                  <PriceCard
+                    name="Pro"
+                    price="₹499"
+                    period="per month"
+                    highlighted
+                    features={[
+                      "Unlimited analyses",
+                      "Full mentor report",
+                      "History dashboard",
+                      "PDF export",
+                    ]}
+                    cta="Get Pro"
+                    href="/pricing"
+                  />
+                  <PriceCard
+                    name="Business"
+                    price="₹1999"
+                    period="per month"
+                    features={[
+                      "Everything in Pro",
+                      "5 seats included",
+                      "Manager dashboard",
+                      "API access",
+                    ]}
+                    cta="Contact us"
+                    href="mailto:hello@example.com"
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 5 — FAQ */}
+            <section className="py-16">
+              <div className="mx-auto max-w-3xl px-4">
+                <h2 className="mb-10 text-center text-3xl font-bold tracking-tight sm:text-4xl">
+                  Frequently asked questions
+                </h2>
+                <Accordion type="single" collapsible className="w-full">
+                  <FaqItem
+                    value="q1"
+                    q="Is my video stored after analysis?"
+                    a="No. Videos are processed in memory and never stored on our servers."
+                  />
+                  <FaqItem
+                    value="q2"
+                    q="What video formats are supported?"
+                    a="MP4, MOV, AVI, and WebM up to 200MB. We recommend 30 seconds to 3 minutes."
+                  />
+                  <FaqItem
+                    value="q3"
+                    q="How accurate is the body language analysis?"
+                    a="Our AI samples up to 8 frames and scores posture and eye contact. Results improve with good lighting and a clear camera angle."
+                  />
+                  <FaqItem
+                    value="q4"
+                    q="Can I use this for job interview prep?"
+                    a="Absolutely — that's one of our most popular use cases. Practice your answers and get scored before the real thing."
+                  />
+                  <FaqItem
+                    value="q5"
+                    q="What happens when I hit the free limit?"
+                    a="You'll see an upgrade prompt. Your past analyses are always saved in your history."
+                  />
+                </Accordion>
+              </div>
+            </section>
+          </>
         )}
 
-        {analysis && <ResultsDashboard analysis={analysis} onReset={reset} />}
+        {/* Upload tool — kept exactly as-is, just below the fold */}
+        <section
+          id="upload"
+          className="mx-auto max-w-5xl scroll-mt-20 px-4 py-12 sm:py-16"
+        >
+          {!analysis && (
+            <div className="mb-8 text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                Try it now
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Upload a video to get your personal coaching report.
+              </p>
+            </div>
+          )}
+
+          {!analysis && (
+            <div className="space-y-5">
+              <VideoUploader file={file} onFile={setFile} disabled={busy} />
+
+              <div className="grid gap-4 rounded-2xl border border-border bg-card/60 p-5 shadow-card backdrop-blur sm:grid-cols-[1fr_auto] sm:items-end">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Coaching tone
+                  </label>
+                  <Select
+                    value={tone}
+                    onValueChange={(v) => setTone(v as typeof tone)}
+                    disabled={busy}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="neutral">
+                        Neutral — balanced & professional
+                      </SelectItem>
+                      <SelectItem value="male">
+                        Direct — competitive, data-driven
+                      </SelectItem>
+                      <SelectItem value="female">
+                        Encouraging — warm & empowering
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  size="lg"
+                  onClick={run}
+                  disabled={!file || busy}
+                  className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+                >
+                  {busy ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Analyzing…
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Analyze presentation
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {busy && (
+                <div className="rounded-2xl border border-border bg-card/60 p-5 shadow-card backdrop-blur">
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="text-foreground/90">{statusText}</span>
+                    <span className="text-muted-foreground">{progress}%</span>
+                  </div>
+                  <Progress value={progress} />
+                  {stage === "analyzing" && (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Running transcription, speech analysis, vision analysis, and
+                      mentor feedback in parallel. This usually takes 20–60 seconds.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {needsAuth && (
+                <div className="rounded-2xl border border-primary/40 bg-primary/10 p-5 text-sm shadow-glow">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground">
+                      <LogIn className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-foreground">
+                        Sign in for free to keep going
+                      </p>
+                      <p className="mt-1 text-foreground/80">
+                        You've used your free anonymous analysis. Create a free
+                        account to get 3 analyses every month.
+                      </p>
+                      <div className="mt-3">
+                        <Button
+                          asChild
+                          size="sm"
+                          className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+                        >
+                          <Link to="/auth">Sign in free</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {error && !needsAuth && (
+                <div
+                  role="alert"
+                  className="rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive-foreground"
+                >
+                  <p className="font-medium">Analysis failed</p>
+                  <p className="mt-1 text-foreground/90">{error}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {analysis && <ResultsDashboard analysis={analysis} onReset={reset} />}
+        </section>
       </main>
 
       <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
