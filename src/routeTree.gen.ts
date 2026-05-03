@@ -13,6 +13,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe-webhook'
 
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
@@ -34,18 +35,25 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
+  id: '/api/stripe-webhook',
+  path: '/api/stripe-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/history': typeof HistoryRoute
   '/pricing': typeof PricingRoute
+  '/api/stripe-webhook': typeof ApiStripeWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/history': typeof HistoryRoute
   '/pricing': typeof PricingRoute
+  '/api/stripe-webhook': typeof ApiStripeWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,20 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/history': typeof HistoryRoute
   '/pricing': typeof PricingRoute
+  '/api/stripe-webhook': typeof ApiStripeWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/history' | '/pricing'
+  fullPaths: '/' | '/auth' | '/history' | '/pricing' | '/api/stripe-webhook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/history' | '/pricing'
-  id: '__root__' | '/' | '/auth' | '/history' | '/pricing'
+  to: '/' | '/auth' | '/history' | '/pricing' | '/api/stripe-webhook'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/history'
+    | '/pricing'
+    | '/api/stripe-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +82,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   HistoryRoute: typeof HistoryRoute
   PricingRoute: typeof PricingRoute
+  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +115,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/stripe-webhook': {
+      id: '/api/stripe-webhook'
+      path: '/api/stripe-webhook'
+      fullPath: '/api/stripe-webhook'
+      preLoaderRoute: typeof ApiStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,16 +130,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   HistoryRoute: HistoryRoute,
   PricingRoute: PricingRoute,
+  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
