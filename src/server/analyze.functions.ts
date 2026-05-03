@@ -204,19 +204,22 @@ export const analyzePresentation = createServerFn({ method: "POST" })
     let analysesUsed = 0;
 
     if (userId) {
+      // Defensive upsert: ensures a profile row exists even if the
+      // on_auth_user_created trigger somehow didn't fire for this user.
       const { data: profile, error } = await supabaseAdmin
         .from("profiles")
+        .upsert(
+          { id: userId, plan: "free", analyses_used: 0 },
+          { onConflict: "id", ignoreDuplicates: true },
+        )
         .select("plan, analyses_used")
-        .eq("id", userId)
-        .maybeSingle();
+        .single();
       if (error) {
         console.error("Profile fetch failed", error);
         throw new Error("AI_ERROR: Could not load your account. Please try again.");
       }
-      if (profile) {
-        plan = (profile.plan as typeof plan) ?? "free";
-        analysesUsed = profile.analyses_used ?? 0;
-      }
+      plan = (profile.plan as typeof plan) ?? "free";
+      analysesUsed = profile.analyses_used ?? 0;
       if (plan === "free" && analysesUsed >= FREE_PLAN_LIMIT) {
         throw new Error(
           "LIMIT_REACHED: You've used all 3 free analyses. Upgrade to Pro for unlimited access.",
