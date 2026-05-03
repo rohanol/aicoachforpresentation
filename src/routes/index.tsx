@@ -1,7 +1,36 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Mic, Sparkles, Loader2, LogIn } from "lucide-react";
+import {
+  Mic,
+  Sparkles,
+  Loader2,
+  LogIn,
+  Upload,
+  Cpu,
+  FileText,
+  Mic2,
+  PenLine,
+  Eye,
+  PersonStanding,
+  MessageSquare,
+  Brain,
+  Check,
+  Star,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 import { VideoUploader } from "@/components/VideoUploader";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
