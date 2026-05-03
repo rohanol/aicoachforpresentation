@@ -543,6 +543,7 @@ function HomePage() {
       </footer>
 
       <UpgradeModal open={showUpgrade} onOpenChange={setShowUpgrade} />
+      <SampleReportDialog open={showSample} onOpenChange={setShowSample} />
     </div>
   );
 }
@@ -557,3 +558,206 @@ function Stat({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function Step({
+  n,
+  icon,
+  title,
+  text,
+}: {
+  n: number;
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-card/60 p-6 shadow-card backdrop-blur">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">
+          {icon}
+        </div>
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Step {n}
+        </span>
+      </div>
+      <h3 className="text-lg font-semibold">{title}</h3>
+      <p className="mt-1 text-sm text-muted-foreground">{text}</p>
+    </div>
+  );
+}
+
+function Feature({
+  icon,
+  title,
+  text,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-card/60 p-5 shadow-card backdrop-blur">
+      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary-glow">
+        {icon}
+      </div>
+      <h3 className="font-semibold">{title}</h3>
+      <p className="mt-1 text-sm text-muted-foreground">{text}</p>
+    </div>
+  );
+}
+
+function PriceCard({
+  name,
+  price,
+  period,
+  features,
+  cta,
+  href,
+  onCta,
+  highlighted,
+}: {
+  name: string;
+  price: string;
+  period: string;
+  features: string[];
+  cta: string;
+  href?: string;
+  onCta?: () => void;
+  highlighted?: boolean;
+}) {
+  const button = onCta ? (
+    <Button
+      onClick={onCta}
+      className={
+        highlighted
+          ? "w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+          : "w-full"
+      }
+      variant={highlighted ? "default" : "outline"}
+    >
+      {cta}
+    </Button>
+  ) : (
+    <Button
+      asChild
+      className={
+        highlighted
+          ? "w-full bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+          : "w-full"
+      }
+      variant={highlighted ? "default" : "outline"}
+    >
+      <a href={href}>{cta}</a>
+    </Button>
+  );
+
+  return (
+    <div
+      className={
+        "relative rounded-2xl border bg-card/60 p-6 shadow-card backdrop-blur " +
+        (highlighted
+          ? "border-primary/60 shadow-glow"
+          : "border-border")
+      }
+    >
+      {highlighted && (
+        <div className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-gradient-primary px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-primary-foreground shadow-glow">
+          <Star className="h-3 w-3" />
+          Most popular
+        </div>
+      )}
+      <h3 className="text-lg font-semibold">{name}</h3>
+      <div className="mt-3 flex items-baseline gap-1">
+        <span className="text-4xl font-bold text-gradient-score">{price}</span>
+        <span className="text-sm text-muted-foreground">/ {period}</span>
+      </div>
+      <ul className="mt-5 space-y-2 text-sm">
+        {features.map((f) => (
+          <li key={f} className="flex items-start gap-2">
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary-glow" />
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-6">{button}</div>
+    </div>
+  );
+}
+
+function FaqItem({ value, q, a }: { value: string; q: string; a: string }) {
+  return (
+    <AccordionItem value={value}>
+      <AccordionTrigger className="text-left">{q}</AccordionTrigger>
+      <AccordionContent className="text-muted-foreground">{a}</AccordionContent>
+    </AccordionItem>
+  );
+}
+
+const SAMPLE_SCORES = [
+  { label: "Fluency", value: 82 },
+  { label: "Grammar", value: 88 },
+  { label: "Confidence", value: 74 },
+  { label: "Posture", value: 79 },
+  { label: "Eye Contact", value: 71 },
+  { label: "Overall", value: 79 },
+];
+
+function SampleReportDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Sample mentor report</DialogTitle>
+          <DialogDescription>
+            A preview of what you'll receive after uploading a real video.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {SAMPLE_SCORES.map((s) => (
+            <div
+              key={s.label}
+              className="rounded-xl border border-border bg-card/60 p-3 text-center"
+            >
+              <p className="text-2xl font-bold text-gradient-score">
+                {s.value}
+              </p>
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                {s.label}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-3 text-sm leading-relaxed text-foreground/90">
+          <p>
+            <strong>Strengths.</strong> Your delivery is clear and well-paced,
+            with strong vocabulary and minimal filler words. Grammar is
+            consistently solid, which keeps the audience focused on your ideas
+            rather than the language.
+          </p>
+          <p>
+            <strong>Areas to improve.</strong> Confidence dipped in the middle
+            third — there's noticeable hedging ("kind of", "I think maybe")
+            when introducing your second main point. Eye contact also drops as
+            you reference notes; try memorizing the opening sentence of each
+            section so you can look up confidently.
+          </p>
+          <p>
+            <strong>Next step.</strong> Re-record just the second section, this
+            time without notes for the first 15 seconds. Aim for a confidence
+            score above 80 — small posture and eye-contact adjustments
+            typically lift the overall score by 5–8 points.
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
