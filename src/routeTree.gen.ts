@@ -13,6 +13,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe-webhook'
 
 const PricingRoute = PricingRouteImport.update({
@@ -35,6 +36,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
 const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
   id: '/api/stripe-webhook',
   path: '/api/stripe-webhook',
@@ -43,31 +49,46 @@ const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/history': typeof HistoryRoute
   '/pricing': typeof PricingRoute
   '/api/stripe-webhook': typeof ApiStripeWebhookRoute
+  '/auth/callback': typeof AuthCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/history': typeof HistoryRoute
   '/pricing': typeof PricingRoute
   '/api/stripe-webhook': typeof ApiStripeWebhookRoute
+  '/auth/callback': typeof AuthCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/history': typeof HistoryRoute
   '/pricing': typeof PricingRoute
   '/api/stripe-webhook': typeof ApiStripeWebhookRoute
+  '/auth/callback': typeof AuthCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/history' | '/pricing' | '/api/stripe-webhook'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/history'
+    | '/pricing'
+    | '/api/stripe-webhook'
+    | '/auth/callback'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/history' | '/pricing' | '/api/stripe-webhook'
+  to:
+    | '/'
+    | '/auth'
+    | '/history'
+    | '/pricing'
+    | '/api/stripe-webhook'
+    | '/auth/callback'
   id:
     | '__root__'
     | '/'
@@ -75,11 +96,12 @@ export interface FileRouteTypes {
     | '/history'
     | '/pricing'
     | '/api/stripe-webhook'
+    | '/auth/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   HistoryRoute: typeof HistoryRoute
   PricingRoute: typeof PricingRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
@@ -115,6 +137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/api/stripe-webhook': {
       id: '/api/stripe-webhook'
       path: '/api/stripe-webhook'
@@ -125,9 +154,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   HistoryRoute: HistoryRoute,
   PricingRoute: PricingRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,

@@ -44,13 +44,29 @@ function AuthPage() {
       const { error: err } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          shouldCreateUser: true,
         },
       });
-      if (err) throw err;
+      if (err) {
+        const msg = err.message || "";
+        if (msg.includes("fetch") || msg.includes("network")) {
+          setError("Connection error. Please check your internet connection and try again.");
+        } else if (msg.includes("rate")) {
+          setError("Too many attempts. Please wait a minute and try again.");
+        } else {
+          setError(msg);
+        }
+        return;
+      }
       setSent(true);
     } catch (e: any) {
-      setError(e?.message ?? "Could not send magic link. Please try again.");
+      const msg = e?.message ?? "";
+      if (msg.includes("fetch") || msg.includes("network")) {
+        setError("Connection error. Please check your internet connection and try again.");
+      } else {
+        setError(msg || "Could not send magic link. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }
